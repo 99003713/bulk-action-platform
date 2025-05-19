@@ -6,6 +6,10 @@ const routes = require('./routes');
 const { logger } = require('./utils/logger');
 require('./cron/bulkActionCron'); // Import cron job
 
+
+const { connectToRabbitMQ } = require('./config/rabbitmq');
+const { consumeBulkAction } = require('./workers/bulkWorkerConsumer');
+
 dotenv.config();
 
 const app = express();
@@ -21,3 +25,17 @@ mongoose.connect(process.env.MONGO_URI)
     app.listen(PORT, () => logger.info(`Server running on port ${PORT}`));
   })
   .catch(err => logger.error('MongoDB connection error:', err));
+
+
+
+// RabbitMQ consumer setup
+// This should be in a separate worker file in a real-world scenario
+// but for simplicity, it's included here.
+// Ensure RabbitMQ connection is established before consuming messages  
+(async () => {
+  const channel = await connectToRabbitMQ();
+  channel.consume('bulk_action_queue', async (msg) => {
+    await consumeBulkAction(msg, channel);
+    channel.ack(msg);
+  });
+})();
