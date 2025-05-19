@@ -10,14 +10,12 @@
   },
   "dependencies": {
     "amqplib": "^0.10.8",
-    "bull": "^4.0.0",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "jest": "^29.7.0",
     "joi": "^17.13.3",
     "mongoose": "^8.14.2",
     "node-cron": "^4.0.5",
-    "redis": "^3.1.2",
     "winston": "^3.3.3"
   },
   "devDependencies": {
