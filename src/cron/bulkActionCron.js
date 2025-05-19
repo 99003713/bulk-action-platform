@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const BulkAction = require('../models/bulkAction.model');
 const { enqueueBulkAction } = require('../services/bulkActionQueue.service');
+const { logger } = require('../utils/logger');
 
 cron.schedule('* * * * *', async () => {
   try {
@@ -20,9 +21,11 @@ cron.schedule('* * * * *', async () => {
 
       await enqueueBulkAction(action._id.toString());
 
-      console.log(`Cron: Enqueued BulkAction ID: ${action._id.toString()}`);
+      logger.info(`Cron: Enqueued BulkAction ID: ${action._id.toString()}`, {
+        bulkActionId: action._id.toString(),
+      });
     }
   } catch (err) {
-    console.error('Cron: Error processing bulk actions', err);
+    logger.error('Cron: Error processing bulk actions', err);
   }
 });

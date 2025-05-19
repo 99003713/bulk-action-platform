@@ -11,10 +11,16 @@ const createBulkActionSchema = Joi.object({
 });
 
 exports.validateCreateBulkAction = (req, res, next) => {
-  const { error } = createBulkActionSchema.validate(req.body);
-  if (error) {
-    logger.error('Validation error:', error.details[0].message);
-    return res.status(400).json({ error: error.details[0].message });
+  try {
+    const { error } = createBulkActionSchema.validate(req.body);
+    if (error) {
+      logger.error('Validation error:', error.details[0].message);
+      return res.status(400).json({ error: error.details[0].message });
+    }
+    next();
   }
-  next();
+  catch (err) {
+    logger.error('Unexpected error during validation:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 }

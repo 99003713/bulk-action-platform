@@ -6,7 +6,6 @@ const routes = require('./routes');
 const { logger } = require('./utils/logger');
 require('./cron/bulkActionCron'); // Import cron job
 
-
 const { connectToRabbitMQ } = require('./config/rabbitmq');
 const { consumeBulkAction } = require('./workers/bulkWorkerConsumer');
 

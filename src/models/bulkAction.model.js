@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const targetUserSchema = new mongoose.Schema({
-  userId: { type: String, required: true, ref: 'Contact' },
+  userId: { type: String, required: true },
   status: { type: String, enum: ['pending', 'success', 'failed', 'skipped'], default: 'pending' },
   error: { type: String },
 }, { _id: false });

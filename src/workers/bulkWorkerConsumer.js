@@ -10,10 +10,11 @@ const updateContactsInBatch = async (userIds, payload) => {
 };
 
 exports.consumeBulkAction = async (msg, channel) => {
-  logger.info('Received message from RabbitMQ', { msg: msg.content.toString() });
-  const { bulkActionId } = JSON.parse(msg.content.toString());
-
   try {
+
+    logger.info('Received message from RabbitMQ', { msg: msg.content.toString() });
+    const { bulkActionId } = JSON.parse(msg.content.toString());
+
     const action = await BulkAction.findById(bulkActionId);
     if (!action || action.status !== 'in-progress') {
       logger.warn(`Invalid or already processed BulkAction ID: ${bulkActionId}`);
