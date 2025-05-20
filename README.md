@@ -103,7 +103,7 @@ brew services start rabbitmq
 ------------------------------------------------------------------------
 
 API Endpoints (Provided Postman Collection)
-Assuming your server is running locally at http://localhost:3000
+http://localhost:3000
 
 1. Create Bulk Action
 URL: POST /api/bulk-actions
