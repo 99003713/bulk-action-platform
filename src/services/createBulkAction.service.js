@@ -1,6 +1,8 @@
 const BulkAction = require('../models/bulkAction.model');
 const { logger } = require('../utils/logger');
-const { publishToQueue } = require('../config/rabbitmq');
+const { publishToQueue } = require('../utils/rabbitmq');
+const dotenv = require('dotenv');
+dotenv.config();
 
 exports.createBulkActionService = async (data) => {
   try {
@@ -32,7 +34,7 @@ exports.createBulkActionService = async (data) => {
       bulkAction.status = 'in-progress';
       await bulkAction.save();
 
-      await publishToQueue('bulk_action_queue', {
+      await publishToQueue(process.env.RABBITMQ_QUEUE_NAME, {
         bulkActionId: bulkAction._id.toString()
       });
     } else {

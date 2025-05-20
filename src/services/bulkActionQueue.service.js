@@ -1,11 +1,13 @@
-const { getChannel } = require('../config/rabbitmq');
+const { getChannel } = require('../utils/rabbitmq');
 const { logger } = require('../utils/logger');
+const dotenv = require('dotenv');
+dotenv.config();
 
 exports.enqueueBulkAction = async (bulkActionId) => {
   try {
     const channel = getChannel();
     if (!channel) throw new Error('RabbitMQ channel not initialized');
-    channel.sendToQueue('bulk_action_queue', Buffer.from(bulkActionId), {
+    channel.sendToQueue(process.env.RABBITMQ_QUEUE_NAME, Buffer.from(bulkActionId), {
       persistent: true,
     });
   }

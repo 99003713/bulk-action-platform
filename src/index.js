@@ -6,7 +6,7 @@ const routes = require('./routes');
 const { logger } = require('./utils/logger');
 require('./cron/bulkActionCron'); // Import cron job
 
-const { connectToRabbitMQ } = require('./config/rabbitmq');
+const { connectToRabbitMQ } = require('./utils/rabbitmq');
 const { consumeBulkAction } = require('./workers/bulkWorkerConsumer');
 
 dotenv.config();
@@ -33,7 +33,7 @@ mongoose.connect(process.env.MONGO_URI)
 // Ensure RabbitMQ connection is established before consuming messages  
 (async () => {
   const channel = await connectToRabbitMQ();
-  channel.consume('bulk_action_queue', async (msg) => {
+  channel.consume(process.env.RABBITMQ_QUEUE_NAME, async (msg) => {
     await consumeBulkAction(msg, channel);
     channel.ack(msg);
   });

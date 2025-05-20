@@ -2,8 +2,10 @@ const cron = require('node-cron');
 const BulkAction = require('../models/bulkAction.model');
 const { enqueueBulkAction } = require('../services/bulkActionQueue.service');
 const { logger } = require('../utils/logger');
+const dotenv = require('dotenv');
+dotenv.config();
 
-cron.schedule('* * * * *', async () => {
+cron.schedule(process.env.PROCESS_CRON_SCHEDULE, async () => {
   try {
     const now = new Date();
     const pendingActions = await BulkAction.find({

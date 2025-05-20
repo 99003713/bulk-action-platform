@@ -1,12 +1,15 @@
 const amqp = require('amqplib');
+const dotenv = require('dotenv');
+dotenv.config();
 
 let channel;
 
+
 const connectToRabbitMQ = async () => {
   try {
-    const connection = await amqp.connect('amqp://localhost');
+    const connection = await amqp.connect(process.env.RABBITMQ_URL);
     channel = await connection.createChannel();
-    await channel.assertQueue('bulk_action_queue', { durable: true });
+    await channel.assertQueue(process.env.RABBITMQ_QUEUE_NAME, { durable: true });
     return channel;
   }
   catch (error) {
