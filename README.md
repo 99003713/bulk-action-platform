@@ -77,35 +77,33 @@ This project is a scalable **Bulk Action Platform** designed for CRM systems, wh
 
 ## ⚙️ How to Run Locally
 
+**Install required packages**
 npm install
 
-# Tap the MongoDB formulae
-brew tap mongodb/brew
-
-# Install MongoDB community edition
+**Install MongoDB community edition**
 brew install mongodb-community@6.0
 
-# Start MongoDB service
+**Start MongoDB service**
 brew services start mongodb-community@6.0
 
-# To stop MongoDB service (if needed)
-# brew services stop mongodb-community@6.0
+**To stop MongoDB service (if needed)**
+brew services stop mongodb-community@6.0
 
-# Install RabbitMQ
+**Install RabbitMQ**
 brew install rabbitmq
 
-# Start RabbitMQ server
+**Start RabbitMQ server**
 brew services start rabbitmq
 
-# To stop RabbitMQ server (if needed)
-# brew services stop rabbitmq
+**To stop RabbitMQ server (if needed)**
+brew services stop rabbitmq
 
 ------------------------------------------------------------------------
 
-API Endpoints (Provided Postman Collection)
-http://localhost:3000
+## API Endpoints (Provided Postman Collection)
+Local URL: http://localhost:3000
 
-1. Create Bulk Action
+**1. Create Bulk Action**
 URL: POST /api/bulk-actions
 
 Description: Creates a new bulk action and enqueues it if scheduled time is now or in the past.
@@ -128,7 +126,7 @@ Body: Created bulk action object with status and targetUsers
 
 --
 
-2. Get Bulk Action Status by ID
+**2. Get Bulk Action Status by ID**
 URL: GET /api/bulk-actions/:actionId/status
 
 Description: Fetches the current status and details of a bulk action by its ID.
@@ -147,7 +145,7 @@ Response Example:
 
 --
 
-3. Get Bulk Action Stats by ID
+**3. Get Bulk Action Stats by ID**
 URL: GET /api/bulk-actions/:actionId/stats
 
 Description: Retrieves aggregated stats about the bulk action progress.
@@ -166,7 +164,7 @@ Response Example:
 
 --
 
-4. List All Bulk Actions
+**4. List All Bulk Actions**
 URL: GET /api/bulk-actions
 
 Description: Returns a list of all bulk actions sorted by creation date (newest first).
@@ -191,7 +189,7 @@ Response Example:
 ----------------------------------------------------------------
 
 
-Notes:
+## Notes:
 Use a REST client like Postman or curl to test the APIs.
 
 Make sure MongoDB and RabbitMQ are running locally as per setup instructions.
