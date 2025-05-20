@@ -22,6 +22,7 @@ This project is a scalable **Bulk Action Platform** designed for CRM systems, wh
 - **Jest** for unit testing
 - **dotenv** for environment config
 - **Winston (or console.log)** for logging
+- **Node Cron** for Scheduling
 
 ------------------------------------------------------------------------
 

@@ -1,5 +1,6 @@
 const amqp = require('amqplib');
 const dotenv = require('dotenv');
+const { logger } = require('./logger'); 
 dotenv.config();
 
 let channel;
@@ -10,6 +11,7 @@ const connectToRabbitMQ = async () => {
     const connection = await amqp.connect(process.env.RABBITMQ_URL);
     channel = await connection.createChannel();
     await channel.assertQueue(process.env.RABBITMQ_QUEUE_NAME, { durable: true });
+    logger.info('Connected to RabbitMQ');
     return channel;
   }
   catch (error) {
