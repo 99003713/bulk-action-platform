@@ -26,6 +26,55 @@ This project is a scalable **Bulk Action Platform** designed for CRM systems, wh
 
 ------------------------------------------------------------------------
 
+
+## ⚙️ How Bulk Processing Works
+
+### 📝 Bulk Action Creation
+
+- A `POST /api/bulk-actions` API is available to create a new bulk action.
+- Users can **immediately execute** or **schedule** actions using the `scheduledAt` field.
+- Payload includes:
+  - `entityType` (e.g., user, account)
+  - `actionType` (e.g., sendEmail, deactivateUser)
+  - `targetUsers[]` (array of user IDs)
+  - `payload` (custom action-specific data)
+
+---
+
+### 🕒 Queueing
+
+- If `scheduledAt` is **now or in the past**, the job is immediately published to **RabbitMQ**.
+- If `scheduledAt` is in the **future**, a **cron job** regularly checks and enqueues jobs whose time has arrived.
+
+---
+
+### 🧵 Processing Worker
+
+- A background worker (`workers/bulkWorkerConsumer.js`) listens to the RabbitMQ queue.
+- It processes each user **sequentially** (or could be extended for parallelism).
+- For each user:
+  - Executes the action logic.
+  - Updates the **status** (`pending`, `success`, `failed`, or `skipped`) in MongoDB.
+  - Optionally logs any error metadata with timestamps.
+
+---
+
+### 📊 Stats & Monitoring
+
+- **Status API** (`GET /api/bulk-actions/:actionId/status`) provides real-time status of each target user.
+- **Stats API** (`GET /api/bulk-actions/:actionId/stats`) returns aggregated results:
+  - Total users
+  - Count of users per status (success, failed, pending, skipped)
+
+---
+
+This design ensures that even large user actions are:
+- Decoupled and asynchronous
+- Fault-tolerant with per-user tracking
+- Scalable via RabbitMQ and worker pool
+
+------------------------------------------------------------------------
+
 ## 📁 Project Structure
 .
 ├── README.md
@@ -80,28 +129,30 @@ This project is a scalable **Bulk Action Platform** designed for CRM systems, wh
 **Install required packages**
 npm install
 
-**Install MongoDB community edition**
-brew install mongodb-community@6.0
+**Install MongoDB community edition** 
+- > brew install mongodb-community@6.0
 
 **Start MongoDB service**
-brew services start mongodb-community@6.0
+- > brew services start mongodb-community@6.0
 
 **To stop MongoDB service (if needed)**
-brew services stop mongodb-community@6.0
+- > brew services stop mongodb-community@6.0
 
 **Install RabbitMQ**
-brew install rabbitmq
+- >brew install rabbitmq
 
 **Start RabbitMQ server**
-brew services start rabbitmq
+- > brew services start rabbitmq
 
 **To stop RabbitMQ server (if needed)**
-brew services stop rabbitmq
+- > brew services stop rabbitmq
 
 ------------------------------------------------------------------------
 
 ## API Endpoints (Provided Postman Collection)
 Local URL: http://localhost:3000
+**Start the Server**
+- > npm run start
 
 **1. Create Bulk Action**
 URL: POST /api/bulk-actions
