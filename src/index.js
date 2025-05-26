@@ -35,6 +35,5 @@ mongoose.connect(process.env.MONGO_URI)
   const channel = await connectToRabbitMQ();
   channel.consume(process.env.RABBITMQ_QUEUE_NAME, async (msg) => {
     await consumeBulkAction(msg, channel);
-    channel.ack(msg);
   });
 })();
