@@ -42,7 +42,7 @@ A scalable and modular platform to handle bulk actions in CRM-like systems, supp
 ## 📥 Bulk Action Creation
 
 ### Endpoint
-`POST /api/bulk-actions`
+`POST /bulk-actions`
 
 ### Payload
 ```json
@@ -130,16 +130,20 @@ Stores one document per user targeted.
 
 ## 📊 Monitoring & Analytics
 
-### `/api/bulk-actions/:id/status`
-Returns per-user status from `bulkActionTargets`.
+### `GET /bulk-actions?status=pending&page=2&limit=50`
+Returns all bulk action with target details in pages`.
 
-### `/api/bulk-actions/:id/stats`
-Returns aggregate stats from `bulkActions.stats`.
+   - `status(Optional)` → 'pending', 'in-progress', 'completed', 'failed'
+  - `page(Optional)` → page number
+  - `limit(Optional)` → page size limit
 
-### Pagination (Optional Improvement)
-Consider paginating user statuses:
-- `GET /api/bulk-actions/:id/status?page=2&limit=50`
-- Enables viewing progress in chunks
+
+### `GET /bulk-actions/:id/status`
+Returns action status with target details from both the document.
+
+### `GET /bulk-actions/:id/stats`
+Returns stats of provided action with target details.
+
 
 ---
 
