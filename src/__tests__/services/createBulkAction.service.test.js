@@ -1,9 +1,11 @@
 const { createBulkActionService } = require('../../services/createBulkAction.service');
 const BulkAction = require('../../models/bulkAction.model');
+const BulkActionTarget = require('../../models/bulkActionTarget.model');
 const { publishToQueue } = require('../../utils/rabbitmq');
 const { logger } = require('../../utils/logger');
 
 jest.mock('../../models/bulkAction.model');
+jest.mock('../../models/bulkActionTarget.model');
 jest.mock('../../utils/rabbitmq');
 jest.mock('../../utils/logger');
 
@@ -12,18 +14,18 @@ describe('createBulkActionService', () => {
     jest.clearAllMocks();
   });
 
-  it('should create and return bulk action immediately pushed to queue', async () => {
-    const mockSave = jest.fn();
+  it('should create and return bulk action and push to queue if immediate', async () => {
+    const mockSave = jest.fn().mockResolvedValue();
     const fakeId = 'bulk123';
-    const fakeDate = new Date(Date.now() - 1000); // past date
+    const fakeDate = new Date(Date.now() - 1000); // past
 
     const mockBulkAction = {
       _id: fakeId,
-      save: mockSave,
-      status: 'pending',
+      save: mockSave
     };
 
     BulkAction.mockImplementation(() => mockBulkAction);
+    BulkActionTarget.insertMany.mockResolvedValue();
 
     const data = {
       entityType: 'user',
@@ -37,7 +39,22 @@ describe('createBulkActionService', () => {
     const result = await createBulkActionService(data);
 
     expect(logger.info).toHaveBeenCalledWith('Inside createBulkActionService', data);
-    expect(mockSave).toHaveBeenCalledTimes(2); // once for creation, once for status update
+    expect(mockSave).toHaveBeenCalledTimes(1);
+    expect(BulkActionTarget.insertMany).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          bulkActionId: fakeId,
+          userId: 'u1',
+          status: 'pending',
+          error: ''
+        }),
+        expect.objectContaining({
+          bulkActionId: fakeId,
+          userId: 'u2'
+        })
+      ]),
+      { ordered: false }
+    );
     expect(publishToQueue).toHaveBeenCalledWith(
       process.env.RABBITMQ_QUEUE_NAME,
       { bulkActionId: fakeId }
@@ -46,17 +63,17 @@ describe('createBulkActionService', () => {
   });
 
   it('should skip queue if scheduledAt is in the future', async () => {
-    const mockSave = jest.fn();
-    const fakeId = 'bulk123';
-    const futureDate = new Date(Date.now() + 60 * 1000); // future
+    const mockSave = jest.fn().mockResolvedValue();
+    const fakeId = 'bulk456';
+    const futureDate = new Date(Date.now() + 60000);
 
     const mockBulkAction = {
       _id: fakeId,
-      save: mockSave,
-      status: 'pending',
+      save: mockSave
     };
 
     BulkAction.mockImplementation(() => mockBulkAction);
+    BulkActionTarget.insertMany.mockResolvedValue();
 
     const data = {
       entityType: 'user',
@@ -69,8 +86,9 @@ describe('createBulkActionService', () => {
 
     const result = await createBulkActionService(data);
 
+    expect(mockSave).toHaveBeenCalledTimes(1);
+    expect(BulkActionTarget.insertMany).toHaveBeenCalledTimes(1);
     expect(publishToQueue).not.toHaveBeenCalled();
-    expect(mockSave).toHaveBeenCalledTimes(1); // only initial save
     expect(result).toEqual(mockBulkAction);
   });
 
@@ -84,7 +102,7 @@ describe('createBulkActionService', () => {
       actionType: 'fail',
       accountId: 'acc789',
       payload: {},
-      targetUsers: ['uX'],
+      targetUsers: ['uX']
     };
 
     await expect(createBulkActionService(data)).rejects.toThrow('Error creating bulk action');

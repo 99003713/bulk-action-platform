@@ -49,6 +49,7 @@ A scalable and modular platform to handle bulk actions in CRM-like systems, supp
 {
   "entityType": "user",
   "actionType": "sendEmail",
+  "accountId": "acc12345",
   "targetUsers": ["user1", "user2"],
   "payload": { "subject": "Hello!" },
   "scheduledAt": "2025-05-27T10:00:00.000Z"
