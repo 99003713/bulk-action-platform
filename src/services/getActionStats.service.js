@@ -1,29 +1,38 @@
 const BulkAction = require('../models/bulkAction.model');
+const BulkActionTarget = require('../models/bulkActionTarget.model');
 const mongoose = require('mongoose');
+const { logger } = require('../utils/logger');
 
 exports.getBulkActionStats = async (actionId) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(actionId)) {
-      throw new Error('Invalid action ID');
-    }
-
+    logger.info(`Fetching stats for bulk action ID: ${actionId}`);
     const bulkAction = await BulkAction.findById(actionId);
-
     if (!bulkAction) {
-      throw new Error('BulkAction not found');
+      logger.warn(`No bulk action found for ID: ${actionId}`);
+      return {
+        actionId,
+        totalUsers: 0,
+        successCount: 0,
+        failedCount: 0,
+        skippedCount: 0,
+        pendingCount: 0,
+      };
     }
+
+    // Fetch all targets referencing this bulkAction
+    const targets = await BulkActionTarget.find({ bulkActionId: actionId });
 
     const stats = {
       actionId: bulkAction._id,
-      totalUsers: bulkAction.targetUsers.length,
+      totalUsers: targets.length,
       successCount: 0,
       failedCount: 0,
       skippedCount: 0,
       pendingCount: 0,
     };
 
-    for (const user of bulkAction.targetUsers) {
-      switch (user.status) {
+    for (const target of targets) {
+      switch (target.status) {
         case 'success':
           stats.successCount++;
           break;
@@ -43,6 +52,7 @@ exports.getBulkActionStats = async (actionId) => {
     return stats;
   }
   catch (error) {
+    logger.error(`Error fetching bulk action stats: ${error.message}`);
     throw new Error(`Error fetching bulk action stats: ${error.message}`);
   }
 };

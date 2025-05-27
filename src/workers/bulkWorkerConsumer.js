@@ -1,18 +1,14 @@
 const BulkAction = require('../models/bulkAction.model');
+const BulkActionTarget = require('../models/bulkActionTarget.model');
 const { logger } = require('../utils/logger');
 const dotenv = require('dotenv');
+const { updateBulkTragetsBatch } = require('../services/updateBulkTragetsBatch');
+
 dotenv.config();
 
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE, 10) || 10;
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 1000;
 const MAX_RETRIES = 3;
-
-// Simulated batch update function (replace with actual logic)
-const updateContactsInBatch = async (userIds, payload) => {
-  logger.info(`Batch updating ${userIds.length} users`, { payload });
-  // Simulate DB update or external API call
-  await new Promise(resolve => setTimeout(resolve, 200));
-};
 
 exports.consumeBulkAction = async (msg, channel) => {
   let bulkActionId = null;
@@ -29,46 +25,60 @@ exports.consumeBulkAction = async (msg, channel) => {
       return channel.ack(msg);
     }
 
-    const pendingTargets = action.targetUsers.filter(t => t.status === 'pending' || (t.status === 'retrying' && (t.retryCount || 0) < MAX_RETRIES));
+    // Get all pending/eligible targets from BulkActionTarget collection
+    const allTargets = await BulkActionTarget.find({
+      bulkActionId,
+      $or: [
+        { status: 'pending' },
+        { status: 'retrying', retryCount: { $lt: MAX_RETRIES } }
+      ]
+    });
+
     const processedUserIds = new Set();
     let index = 0;
 
-    while (index < pendingTargets.length) {
+    while (index < allTargets.length) {
       const batch = [];
 
-      while (batch.length < BATCH_SIZE && index < pendingTargets.length) {
-        const target = pendingTargets[index];
+      while (batch.length < BATCH_SIZE && index < allTargets.length) {
+        const target = allTargets[index];
         const userIdStr = String(target.userId);
 
         if (processedUserIds.has(userIdStr)) {
-          target.status = 'skipped';
-          target.error = 'Duplicate userId detected in batch';
+          await BulkActionTarget.findByIdAndUpdate(target._id, {
+            status: 'skipped',
+            error: 'Duplicate userId detected in batch',
+          });
           logger.warn(`Skipped duplicate user: ${userIdStr}`);
         } else {
           processedUserIds.add(userIdStr);
           batch.push(target);
         }
+
         index++;
       }
 
       try {
-        await updateContactsInBatch(batch.map(t => t.userId), action.payload);
-        for (const target of batch) {
-          target.status = 'success';
-          target.error = '';
-        }
+        await updateBulkTragetsBatch(batch, action.payload);
       } catch (err) {
+        logger.error('Batch failed, retrying individually');
+
+        // Retry each target in the failed batch individually
         for (const target of batch) {
           const retryCount = target.retryCount || 0;
+
           if (retryCount + 1 >= MAX_RETRIES) {
-            target.status = 'failed';
-            target.error = `Max retries reached: ${err.message || 'Batch update failed'}`;
-            logger.error(`User ${target.userId} failed after max retries`);
+            await BulkActionTarget.findByIdAndUpdate(target._id, {
+              status: 'failed',
+              error: `Max retries reached: ${err.message}`,
+              retryCount: retryCount + 1
+            });
           } else {
-            target.status = 'retrying';
-            target.retryCount = retryCount + 1;
-            target.error = `Retry ${target.retryCount}: ${err.message || 'Batch update failed'}`;
-            logger.warn(`Retrying user ${target.userId}, attempt ${target.retryCount}`);
+            await BulkActionTarget.findByIdAndUpdate(target._id, {
+              status: 'retrying',
+              error: `Retry ${retryCount + 1}: ${err.message}`,
+              retryCount: retryCount + 1
+            });
           }
         }
       }
@@ -76,14 +86,21 @@ exports.consumeBulkAction = async (msg, channel) => {
       await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_WINDOW_MS));
     }
 
-    // Finalize action status
-    const hasFailures = action.targetUsers.some(t => t.status === 'failed');
-    const hasPending = action.targetUsers.some(t => t.status === 'pending' || t.status === 'retrying');
+    // Finalize bulkAction status
+    const remaining = await BulkActionTarget.countDocuments({
+      bulkActionId,
+      $or: [{ status: 'pending' }, { status: 'retrying' }]
+    });
 
-    if (hasFailures) {
-      action.status = 'failed';
-    } else if (!hasPending) {
+    const failed = await BulkActionTarget.countDocuments({
+      bulkActionId,
+      status: 'failed'
+    });
+
+    if (remaining === 0 && failed === 0) {
       action.status = 'completed';
+    } else if (failed > 0) {
+      action.status = 'failed';
     }
 
     await action.save();
@@ -92,6 +109,6 @@ exports.consumeBulkAction = async (msg, channel) => {
 
   } catch (err) {
     logger.error(`Error processing BulkAction ID: ${bulkActionId}`, err);
-    channel.nack(msg, false, false);
+    channel.nack(msg, false, false); // Discard the message
   }
 };
